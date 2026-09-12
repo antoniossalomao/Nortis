@@ -1,21 +1,57 @@
-MIT License
+NORTIS — TERMOS DE USO PROPRIETÁRIO
 
 Copyright (c) 2026 Antonio Salomão
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Todos os direitos reservados.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. TITULARIDADE E ESCOPO
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Estes termos se aplicam ao código, à documentação e aos demais materiais
+originais do aplicativo Nortis sobre os quais Antonio Salomão detém direitos
+(o "Software"). O Software é proprietário e não é oferecido sob uma licença
+de código aberto.
+
+2. AUTORIZAÇÃO OBRIGATÓRIA
+
+Nenhuma licença de uso é concedida por este documento. Sem autorização
+prévia, expressa e por escrito do titular, não é permitido usar, executar,
+copiar, reproduzir, modificar, criar obras derivadas, publicar, distribuir,
+hospedar, disponibilizar como serviço, sublicenciar, vender ou explorar o
+Software, no todo ou em parte, para fins comerciais ou não comerciais.
+
+A mera disponibilização ou o acesso ao código não constitui autorização.
+Qualquer autorização concedida se limita às finalidades e condições
+expressamente acordadas por escrito com o titular. Solicitações devem ser
+dirigidas a Antonio Salomão, identificado em:
+https://github.com/antoniossalomao
+
+3. DIREITOS RESERVADOS E EXCEÇÕES
+
+Todos os direitos não expressamente concedidos permanecem reservados.
+Estes termos não limitam direitos ou exceções que não possam ser afastados
+pela legislação aplicável, nem direitos concedidos pelos termos da
+plataforma de hospedagem. Caso o repositório seja público no GitHub, os
+direitos de visualização e fork previstos nos termos do GitHub não
+constituem uma autorização geral para usar ou explorar o aplicativo.
+
+Estes termos não revogam permissões válidas anteriormente concedidas sobre
+cópias ou versões disponibilizadas sob outra licença.
+
+4. COMPONENTES DE TERCEIROS
+
+Bibliotecas, dependências e outros componentes de terceiros, incluindo
+Chart.js, permanecem sujeitos às respectivas licenças. Estes termos não
+alteram essas licenças nem reivindicam direitos sobre tais componentes.
+
+5. AUSÊNCIA DE GARANTIAS
+
+Na máxima extensão permitida pela legislação aplicável, o Software é
+fornecido "no estado em que se encontra", sem garantias expressas ou
+implícitas, incluindo garantias de adequação a uma finalidade específica,
+comercialização ou ausência de infração. Não há garantia de funcionamento
+ininterrupto, ausência de erros ou preservação de dados.
+
+Na máxima extensão permitida pela legislação aplicável, o titular não será
+responsável por danos ou perdas decorrentes do uso ou da impossibilidade de
+uso do Software. Esta disposição não afasta responsabilidades que não
+possam ser excluídas por lei.

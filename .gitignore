@@ -1,0 +1,45 @@
+# Dependências e arquivos gerados
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+
+# Variáveis e credenciais locais
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+
+# Dados financeiros, bancos e backups locais
+/data/
+/backups/
+/exports/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.bak
+
+# Logs e testes temporários
+*.log
+playwright-report/
+test-results/
+.codex-smoke-test.js
+
+# Configuração pessoal do editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+Desktop.ini
