@@ -1,0 +1,42 @@
+{
+  "name": "nortis",
+  "productName": "Nortis",
+  "version": "0.1.0",
+  "description": "Painel de controle financeiro pessoal",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "electron .",
+    "build": "electron-builder --win"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "chart.js": "^4.5.1",
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.nortis.app",
+    "productName": "Nortis",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  },
+  "allowScripts": {
+    "electron@44.3.0": true,
+    "electron-winstaller@5.4.0": true
+  }
+}

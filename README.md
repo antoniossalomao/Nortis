@@ -1,70 +1,90 @@
 # Nortis
 
-Aplicativo de gestão financeira pessoal para acompanhar receitas, gastos e metas de economia em um painel mensal. Projeto em desenvolvimento, feito com HTML, CSS e JavaScript puro.
+Aplicativo desktop de gestão financeira pessoal para acompanhar receitas, gastos e metas de
+economia em um painel mensal. Feito com Electron (JavaScript puro na interface) e SQLite local —
+sem servidor, sem navegador, sem dependência de internet.
 
-## Funcionalidades atuais
+## Funcionalidades
 
-- Cadastro e exclusão de receitas e gastos por categoria e data.
+- Cadastro, edição e exclusão de receitas e gastos por categoria e data.
+- Busca por descrição/categoria e filtros de receitas/gastos no mês corrente.
 - Resumo mensal de receitas, despesas, saldo e taxa de economia.
-- Navegação entre meses e gráfico de fluxo dos seis meses até o mês selecionado.
-- Gráfico de gastos por categoria.
-- Metas de economia com acompanhamento de progresso e incrementos rápidos.
-- Interface escura e responsiva, com validação dos formulários e confirmação de exclusão.
-- Armazenamento local no navegador.
+- Navegação entre meses e gráficos de fluxo (6 meses) e gastos por categoria.
+- Metas de economia com contribuições rápidas ou personalizadas.
+- Backup e restauração dos dados em JSON.
+- Autenticação multiusuário local (registro/login/logout) com bloqueio temporário após tentativas
+  de login incorretas — cada pessoa que usa o app tem seus próprios lançamentos, metas e categorias.
+- Banco SQLite versionado por migrations, com estrutura preparada para contas, cartões, parcelas,
+  recorrências, orçamentos, tags, anexos e importações (ainda sem telas próprias).
 
-## Executar localmente
+## Executar em desenvolvimento
 
-As instruções abaixo destinam-se ao titular e a pessoas previamente autorizadas, conforme a [licença](LICENSE).
+Requer [Node.js](https://nodejs.org) 22 ou superior.
 
-1. Abra a pasta do projeto no VS Code.
-2. Com a extensão Live Server instalada, clique com o botão direito em `finance-dashboard.html` e selecione **Open with Live Server**.
-3. Acesse o endereço informado pela extensão, normalmente `http://127.0.0.1:5500/finance-dashboard.html`.
+```bash
+npm install
+npm run dev
+```
 
-Para visualizar dentro do VS Code, abra o navegador integrado pela paleta de comandos e informe o mesmo endereço.
+Isso abre a janela do app. Na primeira execução você verá a tela de login — use **Criar conta**
+para se cadastrar.
 
-Não é necessário instalar Node.js ou executar um build. Os gráficos dependem do carregamento do Chart.js 4.4.1 pelo CDN cdnjs e, portanto, precisam de conexão para esse carregamento.
+## Gerar o instalador (.exe)
+
+```bash
+npm run build
+```
+
+Gera um instalador NSIS e uma versão portátil em `release/`.
 
 ## Estrutura
 
 ```text
 Nortis/
-├── finance-dashboard.html        # Estrutura da página e formulários
-├── styles.css                    # Aparência e responsividade
-├── app.js                        # Comportamentos, gráficos e persistência
-├── contexto-dashboard-financas.md # Contexto original do protótipo
-├── README.md
-├── .gitignore
-└── LICENSE
+├── electron/
+│   ├── main.js               # janela, ciclo de vida do app, handlers de IPC
+│   ├── preload.js            # contextBridge: expõe window.nortis ao front-end
+│   └── db/
+│       ├── connection.js     # abre o SQLite (node:sqlite) e roda as migrations
+│       ├── migrations/       # schema versionado (SQL puro + uma migration em JS)
+│       ├── auth.js           # registro/login/logout, hash de senha, bloqueio por tentativas
+│       └── finance.js        # transações, metas, categorias, backup, auditoria
+├── src/                       # interface (HTML/CSS/JS puro, sem build step)
+│   ├── index.html / app.js   # painel principal
+│   ├── login.html / login.js # tela de entrar/criar conta
+│   ├── styles.css
+│   └── vendor/chart.umd.js   # Chart.js vendorizado (sem CDN, funciona offline)
+├── build/                     # ícone do instalador (build/icon.ico, opcional)
+└── package.json
 ```
 
-O documento de contexto registra a versão inicial e contém informações antigas sobre a estrutura e a persistência. Este README descreve o estado atual.
+## Dados e backup
 
-## Armazenamento e limitações
+O SQLite é a fonte de verdade e fica em `app.getPath('userData')` (no Windows,
+`%APPDATA%\nortis\nortis.sqlite`), fora da pasta do projeto — sobrevive a atualizações do app.
+Valores monetários são armazenados como centavos inteiros e as relações usam chaves estrangeiras.
 
-Os lançamentos e as metas ficam no `localStorage`, nas chaves `finance:transactions` e `finance:goals`. Eles permanecem após recarregar a página, desde que o navegador permita o armazenamento.
+Use **Backup** para baixar um JSON e **Importar** para restaurá-lo (a importação manual substitui
+lançamentos e metas atuais após confirmação).
 
-Os dados pertencem ao navegador, perfil e origem utilizados. Alternar entre `localhost` e `127.0.0.1`, mudar a porta ou usar outro navegador pode mostrar um armazenamento diferente. Limpar os dados do site pode apagar os registros. Ainda não há exportação de backup, login, servidor ou sincronização entre celular e computador.
+## Autenticação
 
-Se o ambiente antigo disponibilizar `window.storage` e não houver dados locais para a coleção, o aplicativo tenta migrar os registros acessíveis nesse ambiente. Isso não transfere automaticamente dados de outro navegador ou do Claude para uma página local.
-
-Os incrementos nas metas são registros manuais independentes dos lançamentos; não representam transferências reais nem alteram o saldo mensal.
-
-## Próximos passos possíveis
-
-- Edição de lançamentos.
-- Exportação e importação de backup.
-- Orçamentos por categoria e lançamentos recorrentes.
-- Contas e cartões.
-- Autenticação e sincronização, quando houver um backend.
-
-Esses recursos ainda não estão implementados.
+Não há servidor HTTP, então não há cookies nem CSRF: a sessão é mantida em memória no processo
+principal do Electron enquanto o app está aberto. O primeiro cadastro feito no computador reaproveita
+automaticamente um eventual banco de dados já existente (nenhum lançamento é perdido); cadastros
+seguintes criam usuários independentes, cada um com seus próprios dados.
 
 ## Licença e permissões
 
 Copyright (c) 2026 Antonio Salomão. Todos os direitos reservados.
 
-O Nortis é software proprietário. Usar, executar, copiar, modificar, distribuir, hospedar ou comercializar o aplicativo exige autorização prévia, expressa e por escrito do titular, ressalvadas as exceções da [LICENSE](LICENSE). A disponibilização do código não concede uma licença de uso.
+O Nortis é software proprietário. Usar, executar, copiar, modificar, distribuir, hospedar ou
+comercializar o aplicativo exige autorização prévia, expressa e por escrito do titular, ressalvadas
+as exceções da [LICENSE](LICENSE). A disponibilização do código não concede uma licença de uso.
 
-Para solicitar autorização, contate Antonio Salomão pelo [perfil do GitHub](https://github.com/antoniossalomao) e aguarde uma autorização expressa antes de utilizar o aplicativo.
+Para solicitar autorização, contate Antonio Salomão pelo
+[perfil do GitHub](https://github.com/antoniossalomao) e aguarde uma autorização expressa antes de
+utilizar o aplicativo.
 
-Componentes de terceiros, como o [Chart.js](https://github.com/chartjs/Chart.js), permanecem sujeitos às suas próprias licenças.
+Componentes de terceiros, como o [Chart.js](https://github.com/chartjs/Chart.js) e o
+[Electron](https://github.com/electron/electron), permanecem sujeitos às suas próprias licenças.

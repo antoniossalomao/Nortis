@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Entrar · Nortis</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden;
+      background:
+        radial-gradient(900px 500px at 18% 8%, oklch(78% 0.1 83 / 5%), transparent 60%),
+        repeating-linear-gradient(to bottom, transparent 0 55px, oklch(100% 0 0 / 2.5%) 55px 56px),
+        var(--bg);
+    }
+    .auth-card { width: min(400px, calc(100vw - 40px)); background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 30px 60px -28px rgba(0,0,0,.65);
+      padding: 40px 38px; }
+    .auth-brand { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 28px; }
+    .auth-brand .brand-mark { width: 46px; height: 46px; border-radius: 11px; }
+    .auth-brand h1 { font-family: var(--serif); font-size: 23px; font-weight: 500; letter-spacing: -.2px; }
+    .auth-brand p { font-size: 12px; color: var(--text-faint); margin-top: 3px; text-align: center; }
+    .auth-tabs { display: flex; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 24px; }
+    .auth-tabs button { flex: 1; padding: 11px; font-size: 13px; font-weight: 600; background: none; border: none; color: var(--text-faint); }
+    .auth-tabs button[aria-selected="true"] { background: var(--gold-dim); color: var(--gold); }
+    .auth-tabs button:first-child { border-right: 1px solid var(--border); }
+    .auth-hint { margin: -8px 0 14px; color: var(--text-faint); font-size: 11.5px; }
+  </style>
+</head>
+<body>
+  <main class="auth-card">
+    <div class="auth-brand">
+      <div class="brand-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16c3-1 5-3 6-6 1-3 3-5 6-6M12 4h4v4"/></svg>
+      </div>
+      <div>
+        <h1>Nortis</h1>
+        <p>Painel de controle pessoal</p>
+      </div>
+    </div>
+
+    <div class="auth-tabs" role="tablist" aria-label="Entrar ou criar conta">
+      <button id="tabLogin" type="button" role="tab" aria-selected="true" data-tab="login">Entrar</button>
+      <button id="tabRegister" type="button" role="tab" aria-selected="false" data-tab="register">Criar conta</button>
+    </div>
+
+    <form id="loginForm" novalidate>
+      <div class="field"><label for="loginEmail">E-mail</label><input type="email" id="loginEmail" required autocomplete="email"></div>
+      <div class="field"><label for="loginPassword">Senha</label><input type="password" id="loginPassword" required autocomplete="current-password"></div>
+      <button class="btn solid full" id="loginSubmit" type="submit">Entrar</button>
+    </form>
+
+    <form id="registerForm" novalidate hidden>
+      <div class="field"><label for="registerName">Nome</label><input type="text" id="registerName" maxlength="120" required autocomplete="name"></div>
+      <div class="field"><label for="registerEmail">E-mail</label><input type="email" id="registerEmail" required autocomplete="email"></div>
+      <div class="field"><label for="registerPassword">Senha</label><input type="password" id="registerPassword" minlength="8" required autocomplete="new-password"></div>
+      <p class="auth-hint">Mínimo de 8 caracteres.</p>
+      <button class="btn solid full" id="registerSubmit" type="submit">Criar conta</button>
+    </form>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="login.js"></script>
+</body>
+</html>
