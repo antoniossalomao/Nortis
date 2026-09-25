@@ -625,9 +625,9 @@ async function init() {
   registerEvents();
   setTxType("gasto");
   try {
-    const loaded = await window.nortis.bootstrap();
+    const [loaded, user] = await Promise.all([window.nortis.bootstrap(), window.nortis.auth.me()]);
     applyBootstrap(loaded);
-    elements.storageLabel.textContent = "Antonio Salomão · conta principal";
+    elements.storageLabel.textContent = `${user.name} · conta principal`;
     render();
   } catch (error) {
     if (error?.message?.includes("autenticado")) {

@@ -39,6 +39,7 @@ function registerIpcHandlers() {
   ipcMain.handle("auth:logout", () => {
     currentUserId = null;
   });
+  ipcMain.handle("auth:me", () => authApi.me(requireSession()));
 
   ipcMain.handle("bootstrap", () => financeApi.bootstrap(requireSession()));
   ipcMain.handle("transactions:create", (event, data) => financeApi.createTransaction(requireSession(), data));

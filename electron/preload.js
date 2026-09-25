@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld("nortis", {
     register: (data) => ipcRenderer.invoke("auth:register", data),
     login: (data) => ipcRenderer.invoke("auth:login", data),
     logout: () => ipcRenderer.invoke("auth:logout"),
+    me: () => ipcRenderer.invoke("auth:me"),
   },
   bootstrap: () => ipcRenderer.invoke("bootstrap"),
   transactions: {
