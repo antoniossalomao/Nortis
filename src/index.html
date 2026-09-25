@@ -65,6 +65,7 @@
           </div>
           <div class="kpi-value" id="kpiIncome">R$ 0,00</div>
           <div class="kpi-sub" id="kpiIncomeSub">—</div>
+          <div class="kpi-delta" id="kpiIncomeDelta"></div>
         </article>
         <article class="kpi">
           <div class="kpi-label">
@@ -73,6 +74,7 @@
           </div>
           <div class="kpi-value" id="kpiExpense">R$ 0,00</div>
           <div class="kpi-sub" id="kpiExpenseSub">—</div>
+          <div class="kpi-delta" id="kpiExpenseDelta"></div>
         </article>
         <article class="kpi">
           <div class="kpi-label">
@@ -81,6 +83,7 @@
           </div>
           <div class="kpi-value" id="kpiBalance">R$ 0,00</div>
           <div class="kpi-sub" id="kpiBalanceSub">—</div>
+          <div class="kpi-delta" id="kpiBalanceDelta"></div>
         </article>
         <article class="kpi">
           <div class="kpi-label">
@@ -173,7 +176,30 @@
       <div class="field"><label for="gName">Nome</label><input type="text" id="gName" placeholder="Ex: Reserva de emergência" maxlength="80" required autocomplete="off"></div>
       <div class="field"><label for="gTarget">Valor alvo (R$)</label><input type="number" id="gTarget" step="0.01" min="0.01" placeholder="0,00" required inputmode="decimal"></div>
       <div class="field"><label for="gCurrent">Valor atual (opcional)</label><input type="number" id="gCurrent" step="0.01" min="0" placeholder="0,00" inputmode="decimal"></div>
+      <div class="field"><label for="gTargetDate">Data alvo (opcional)</label><input type="date" id="gTargetDate"></div>
       <button class="btn solid full" id="goalSubmit" type="submit">Criar meta</button>
+    </form>
+  </div>
+
+  <div class="modal-bg" id="modalConfirm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-hidden="true">
+    <div class="modal modal-sm">
+      <div class="modal-title"><h2 id="confirmTitle">Confirmar exclusão</h2></div>
+      <p class="modal-message" id="confirmMessage"></p>
+      <div class="modal-actions">
+        <button class="btn ghost" type="button" id="confirmCancelBtn">Cancelar</button>
+        <button class="btn solid danger-solid" type="button" id="confirmOkBtn">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="modalPrompt" role="dialog" aria-modal="true" aria-labelledby="promptTitle" aria-hidden="true">
+    <form class="modal modal-sm" id="promptForm">
+      <div class="modal-title"><h2 id="promptTitle">Valor da contribuição</h2></div>
+      <div class="field"><label for="promptInput">Valor (R$)</label><input type="number" id="promptInput" step="0.01" min="0.01" placeholder="0,00" inputmode="decimal" required></div>
+      <div class="modal-actions">
+        <button class="btn ghost" type="button" id="promptCancelBtn">Cancelar</button>
+        <button class="btn solid" type="submit">Confirmar</button>
+      </div>
     </form>
   </div>
 

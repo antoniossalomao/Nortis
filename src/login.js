@@ -80,3 +80,13 @@ elements.tabLogin.addEventListener("click", () => showTab("login"));
 elements.tabRegister.addEventListener("click", () => showTab("register"));
 elements.loginForm.addEventListener("submit", handleLogin);
 elements.registerForm.addEventListener("submit", handleRegister);
+
+document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = document.querySelector(`#${button.dataset.togglePassword}`);
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    button.classList.toggle("active", show);
+    button.setAttribute("aria-label", show ? "Ocultar senha" : "Mostrar senha");
+  });
+});

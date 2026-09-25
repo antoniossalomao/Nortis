@@ -44,14 +44,30 @@
 
     <form id="loginForm" novalidate>
       <div class="field"><label for="loginEmail">E-mail</label><input type="email" id="loginEmail" required autocomplete="email"></div>
-      <div class="field"><label for="loginPassword">Senha</label><input type="password" id="loginPassword" required autocomplete="current-password"></div>
+      <div class="field">
+        <label for="loginPassword">Senha</label>
+        <div class="input-with-action">
+          <input type="password" id="loginPassword" required autocomplete="current-password">
+          <button class="field-action" type="button" data-toggle-password="loginPassword" aria-label="Mostrar senha">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
       <button class="btn solid full" id="loginSubmit" type="submit">Entrar</button>
     </form>
 
     <form id="registerForm" novalidate hidden>
       <div class="field"><label for="registerName">Nome</label><input type="text" id="registerName" maxlength="120" required autocomplete="name"></div>
       <div class="field"><label for="registerEmail">E-mail</label><input type="email" id="registerEmail" required autocomplete="email"></div>
-      <div class="field"><label for="registerPassword">Senha</label><input type="password" id="registerPassword" minlength="8" required autocomplete="new-password"></div>
+      <div class="field">
+        <label for="registerPassword">Senha</label>
+        <div class="input-with-action">
+          <input type="password" id="registerPassword" minlength="8" required autocomplete="new-password">
+          <button class="field-action" type="button" data-toggle-password="registerPassword" aria-label="Mostrar senha">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
       <p class="auth-hint">Mínimo de 8 caracteres.</p>
       <button class="btn solid full" id="registerSubmit" type="submit">Criar conta</button>
     </form>

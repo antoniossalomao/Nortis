@@ -18,8 +18,11 @@ let lastFocusedElement;
 let toastTimer;
 let editingTransactionId = null;
 let editingGoalId = null;
+let resolveConfirm = null;
+let resolvePrompt = null;
 
 const elements = {
+  appRoot: document.querySelector(".app"),
   monthLabel: document.querySelector("#monthLabel"),
   kpiIncome: document.querySelector("#kpiIncome"),
   kpiIncomeSub: document.querySelector("#kpiIncomeSub"),
@@ -51,6 +54,7 @@ const elements = {
   gName: document.querySelector("#gName"),
   gTarget: document.querySelector("#gTarget"),
   gCurrent: document.querySelector("#gCurrent"),
+  gTargetDate: document.querySelector("#gTargetDate"),
   toast: document.querySelector("#toast"),
   txModalTitle: document.querySelector("#modalTxTitle"),
   txSubmit: document.querySelector("#txSubmit"),
@@ -59,6 +63,16 @@ const elements = {
   importFile: document.querySelector("#importFile"),
   storageLabel: document.querySelector("#storageLabel"),
   btnLogout: document.querySelector("#btnLogout"),
+  kpiIncomeDelta: document.querySelector("#kpiIncomeDelta"),
+  kpiExpenseDelta: document.querySelector("#kpiExpenseDelta"),
+  kpiBalanceDelta: document.querySelector("#kpiBalanceDelta"),
+  confirmMessage: document.querySelector("#confirmMessage"),
+  confirmOkBtn: document.querySelector("#confirmOkBtn"),
+  confirmCancelBtn: document.querySelector("#confirmCancelBtn"),
+  promptTitle: document.querySelector("#promptTitle"),
+  promptForm: document.querySelector("#promptForm"),
+  promptInput: document.querySelector("#promptInput"),
+  promptCancelBtn: document.querySelector("#promptCancelBtn"),
 };
 
 function todayISO() {
@@ -116,7 +130,36 @@ function closeModals() {
     modal.classList.remove("show");
     modal.setAttribute("aria-hidden", "true");
   });
+  if (resolveConfirm) {
+    resolveConfirm(false);
+    resolveConfirm = null;
+  }
+  if (resolvePrompt) {
+    resolvePrompt(null);
+    resolvePrompt = null;
+  }
   lastFocusedElement?.focus?.();
+}
+
+/** Themed replacement for window.confirm(); resolves true/false. */
+function showConfirm(message, { confirmLabel = "Excluir", danger = true } = {}) {
+  return new Promise((resolve) => {
+    resolveConfirm = resolve;
+    elements.confirmMessage.textContent = message;
+    elements.confirmOkBtn.textContent = confirmLabel;
+    elements.confirmOkBtn.classList.toggle("danger-solid", danger);
+    openModal("modalConfirm");
+  });
+}
+
+/** Themed replacement for window.prompt(); resolves a number or null if cancelled. */
+function showAmountPrompt(title) {
+  return new Promise((resolve) => {
+    resolvePrompt = resolve;
+    elements.promptTitle.textContent = title;
+    elements.promptInput.value = "";
+    openModal("modalPrompt");
+  });
 }
 
 function setFormSaving(form, button, saving) {
@@ -206,7 +249,9 @@ function editTransaction(id) {
 
 async function removeTransaction(id) {
   const transaction = transactions.find((item) => item.id === id);
-  if (!transaction || !window.confirm(`Excluir o lançamento "${transaction.desc}"?`)) return;
+  if (!transaction) return;
+  const confirmed = await showConfirm(`Excluir o lançamento "${transaction.desc}"? Essa ação não pode ser desfeita.`);
+  if (!confirmed) return;
   try {
     await window.nortis.transactions.remove(id);
     transactions = transactions.filter((item) => item.id !== id);
@@ -226,6 +271,7 @@ async function addGoal(event) {
     name: elements.gName.value.trim(),
     target: Number(elements.gTarget.value),
     current: Number(elements.gCurrent.value) || 0,
+    targetDate: elements.gTargetDate.value || null,
   };
   setFormSaving(elements.goalForm, elements.goalSubmit, true);
   try {
@@ -261,12 +307,15 @@ function editGoal(id) {
   elements.gCurrent.value = "";
   elements.gCurrent.disabled = true;
   elements.gCurrent.closest(".field").hidden = true;
+  elements.gTargetDate.value = goal.targetDate || "";
   openModal("modalGoal");
 }
 
 async function removeGoal(id) {
   const goal = goals.find((item) => item.id === id);
-  if (!goal || !window.confirm(`Excluir a meta "${goal.name}"?`)) return;
+  if (!goal) return;
+  const confirmed = await showConfirm(`Excluir a meta "${goal.name}"? Essa ação não pode ser desfeita.`);
+  if (!confirmed) return;
   try {
     await window.nortis.goals.remove(id);
     goals = goals.filter((item) => item.id !== id);
@@ -297,6 +346,31 @@ function getRecentMonthKeys() {
   });
 }
 
+function previousMonthKey(monthStr) {
+  const [year, month] = monthStr.split("-").map(Number);
+  const date = new Date(year, month - 2, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function applyDelta(element, current, previous, favorableWhenHigher) {
+  if (!previous) {
+    element.textContent = "";
+    element.className = "kpi-delta";
+    return;
+  }
+  const diff = current - previous;
+  if (Math.abs(diff) < 0.005) {
+    element.textContent = "estável vs mês anterior";
+    element.className = "kpi-delta";
+    return;
+  }
+  const rising = diff > 0;
+  const favorable = rising === favorableWhenHigher;
+  const pct = Math.min(999, Math.abs((diff / previous) * 100));
+  element.textContent = `${rising ? "▲" : "▼"} ${pct.toFixed(0)}% vs mês anterior`;
+  element.className = `kpi-delta ${favorable ? "good" : "bad"}`;
+}
+
 function renderSummary(monthTransactions) {
   const incomeTransactions = monthTransactions.filter((item) => item.type === "receita");
   const expenseTransactions = monthTransactions.filter((item) => item.type === "gasto");
@@ -304,6 +378,10 @@ function renderSummary(monthTransactions) {
   const expense = expenseTransactions.reduce((sum, item) => sum + item.amount, 0);
   const balance = income - expense;
   const rate = income > 0 ? (balance / income) * 100 : null;
+
+  const previousMonthTransactions = transactions.filter((item) => monthKey(item.date) === previousMonthKey(currentMonth));
+  const previousIncome = previousMonthTransactions.filter((item) => item.type === "receita").reduce((sum, item) => sum + item.amount, 0);
+  const previousExpense = previousMonthTransactions.filter((item) => item.type === "gasto").reduce((sum, item) => sum + item.amount, 0);
 
   elements.kpiIncome.textContent = formatCurrency(income);
   elements.kpiExpense.textContent = formatCurrency(expense);
@@ -313,6 +391,9 @@ function renderSummary(monthTransactions) {
   elements.kpiIncomeSub.textContent = `${incomeTransactions.length} ${incomeTransactions.length === 1 ? "entrada" : "entradas"}`;
   elements.kpiExpenseSub.textContent = `${expenseTransactions.length} ${expenseTransactions.length === 1 ? "saída" : "saídas"}`;
   elements.kpiBalanceSub.textContent = balance >= 0 ? "positivo no mês" : "negativo no mês";
+  applyDelta(elements.kpiIncomeDelta, income, previousIncome, true);
+  applyDelta(elements.kpiExpenseDelta, expense, previousExpense, false);
+  applyDelta(elements.kpiBalanceDelta, balance, previousIncome - previousExpense, true);
 
   return { income, expense };
 }
@@ -349,11 +430,23 @@ function renderTransactions(monthTransactions) {
     .join("");
 }
 
+function goalDeadlineText(goal) {
+  if (!goal.targetDate || goal.current >= goal.target) return "";
+  const diffDays = Math.round((new Date(`${goal.targetDate}T00:00:00`) - new Date(`${todayISO()}T00:00:00`)) / 86400000);
+  if (diffDays < 0) return "prazo vencido";
+  if (diffDays === 0) return "vence hoje";
+  return diffDays === 1 ? "1 dia restante" : `${diffDays} dias restantes`;
+}
+
 function renderGoals() {
   elements.goalsEmpty.hidden = goals.length > 0;
   elements.goalsList.innerHTML = goals
     .map((goal) => {
       const percentage = Math.min(100, (goal.current / goal.target) * 100);
+      const deadline = goalDeadlineText(goal);
+      const deadlineHTML = deadline
+        ? ` · <span class="${deadline === "prazo vencido" ? "overdue" : ""}">${escapeHTML(deadline)}</span>`
+        : "";
       return `
       <div class="goal">
         <div class="goal-top">
@@ -368,7 +461,7 @@ function renderGoals() {
           <div class="bar-fill" style="width: ${percentage}%"></div>
         </div>
         <div class="goal-foot">
-          <span class="goal-pct">${percentage.toFixed(0)}%</span>
+          <span class="goal-pct">${percentage.toFixed(0)}%${deadlineHTML}</span>
           <div class="goal-actions">
             <button class="chip" type="button" data-action="increase-goal" data-id="${escapeHTML(goal.id)}" data-amount="50">+R$ 50</button>
             <button class="chip" type="button" data-action="increase-goal" data-id="${escapeHTML(goal.id)}" data-amount="100">+R$ 100</button>
@@ -513,7 +606,11 @@ async function importBackup(file) {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    if (!window.confirm("Importar este backup substituirá os lançamentos e metas atuais. Continuar?")) return;
+    const confirmed = await showConfirm("Importar este backup substituirá os lançamentos e metas atuais. Continuar?", {
+      confirmLabel: "Importar",
+      danger: false,
+    });
+    if (!confirmed) return;
     const imported = await window.nortis.backup.import({ ...data, replace: true });
     applyBootstrap(imported);
     render();
@@ -574,6 +671,21 @@ function registerEvents() {
     });
   });
 
+  elements.confirmOkBtn.addEventListener("click", () => {
+    resolveConfirm?.(true);
+    resolveConfirm = null;
+    closeModals();
+  });
+  elements.confirmCancelBtn.addEventListener("click", closeModals);
+  elements.promptCancelBtn.addEventListener("click", closeModals);
+  elements.promptForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const value = Number(elements.promptInput.value.replace(",", "."));
+    resolvePrompt?.(Number.isFinite(value) ? value : null);
+    resolvePrompt = null;
+    closeModals();
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModals();
     if (event.key !== "Tab") return;
@@ -608,15 +720,15 @@ function registerEvents() {
     if (button.dataset.action === "remove-transaction") removeTransaction(button.dataset.id);
   });
 
-  elements.goalsList.addEventListener("click", (event) => {
+  elements.goalsList.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
     if (button.dataset.action === "remove-goal") removeGoal(button.dataset.id);
     if (button.dataset.action === "edit-goal") editGoal(button.dataset.id);
     if (button.dataset.action === "increase-goal") increaseGoal(button.dataset.id, Number(button.dataset.amount));
     if (button.dataset.action === "custom-goal") {
-      const value = window.prompt("Valor da contribuição (R$):");
-      if (value !== null) increaseGoal(button.dataset.id, Number(value.replace(",", ".")));
+      const value = await showAmountPrompt("Valor da contribuição (R$)");
+      if (value !== null && value > 0) increaseGoal(button.dataset.id, value);
     }
   });
 }
@@ -638,6 +750,8 @@ async function init() {
     showToast(error.message, true);
     render();
   }
+
+  elements.appRoot?.classList.add("ready");
 
   if (typeof Chart === "undefined") {
     showToast("Os gráficos não carregaram.", true);
