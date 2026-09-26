@@ -50,6 +50,7 @@
             </button>
           </nav>
           <button class="btn ghost" id="btnExport" type="button">↓ Backup</button>
+          <button class="btn ghost" id="btnExportCsv" type="button">↓ CSV</button>
           <button class="btn ghost" id="btnImport" type="button">↑ Importar</button>
           <input id="importFile" type="file" accept="application/json,.json" hidden>
           <button class="btn ghost" id="btnGoal" type="button">＋ Meta</button>
@@ -133,7 +134,13 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="align-right">Valor</th><th><span class="sr-only">Ações</span></th></tr>
+                <tr>
+                  <th data-sort="date" tabindex="0" role="button" aria-label="Ordenar por data">Data</th>
+                  <th data-sort="desc" tabindex="0" role="button" aria-label="Ordenar por descrição">Descrição</th>
+                  <th data-sort="category" tabindex="0" role="button" aria-label="Ordenar por categoria">Categoria</th>
+                  <th class="align-right" data-sort="amount" tabindex="0" role="button" aria-label="Ordenar por valor">Valor</th>
+                  <th><span class="sr-only">Ações</span></th>
+                </tr>
               </thead>
               <tbody id="txBody"></tbody>
             </table>

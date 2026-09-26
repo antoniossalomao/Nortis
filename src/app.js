@@ -20,6 +20,7 @@ let editingTransactionId = null;
 let editingGoalId = null;
 let resolveConfirm = null;
 let resolvePrompt = null;
+let txSort = { key: "date", dir: "desc" };
 
 const elements = {
   appRoot: document.querySelector(".app"),
@@ -247,6 +248,20 @@ function editTransaction(id) {
   openModal("modalTx");
 }
 
+function duplicateTransaction(id) {
+  const transaction = transactions.find((item) => item.id === id);
+  if (!transaction) return;
+  editingTransactionId = null;
+  elements.txModalTitle.textContent = "Duplicar lançamento";
+  elements.txSubmit.textContent = "Adicionar lançamento";
+  setTxType(transaction.type);
+  elements.fDesc.value = transaction.desc;
+  elements.fAmount.value = transaction.amount;
+  elements.fCategory.value = transaction.category;
+  elements.fDate.value = todayISO();
+  openModal("modalTx");
+}
+
 async function removeTransaction(id) {
   const transaction = transactions.find((item) => item.id === id);
   if (!transaction) return;
@@ -398,6 +413,15 @@ function renderSummary(monthTransactions) {
   return { income, expense };
 }
 
+function sortTransactions(list) {
+  const { key, dir } = txSort;
+  const factor = dir === "asc" ? 1 : -1;
+  return [...list].sort((a, b) => {
+    const diff = key === "amount" ? a.amount - b.amount : a[key].localeCompare(b[key], "pt-BR");
+    return diff * factor || a.date.localeCompare(b.date);
+  });
+}
+
 function renderTransactions(monthTransactions) {
   const normalizeSearch = (value) => value.normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]", "g"), "").toLocaleLowerCase("pt-BR");
   const query = normalizeSearch(elements.txSearch.value.trim());
@@ -405,7 +429,7 @@ function renderTransactions(monthTransactions) {
   const filtered = monthTransactions.filter(
     (item) => (!type || item.type === type) && (!query || normalizeSearch(`${item.desc} ${item.category}`).includes(query))
   );
-  const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = sortTransactions(filtered);
   elements.txCount.textContent =
     query || type ? `${sorted.length} de ${monthTransactions.length} lançamentos` : `${sorted.length} ${sorted.length === 1 ? "lançamento" : "lançamentos"}`;
   elements.txEmpty.hidden = sorted.length > 0;
@@ -420,6 +444,7 @@ function renderTransactions(monthTransactions) {
       <td class="align-right ${transaction.type === "receita" ? "amt-in" : "amt-out"}">${transaction.type === "receita" ? "+" : "−"} ${formatCurrency(transaction.amount)}</td>
       <td class="row-actions">
         <span class="inline-actions">
+          <button class="icon-btn" type="button" data-action="duplicate-transaction" data-id="${escapeHTML(transaction.id)}" aria-label="Duplicar ${escapeHTML(transaction.desc)}">⧉</button>
           <button class="icon-btn" type="button" data-action="edit-transaction" data-id="${escapeHTML(transaction.id)}" aria-label="Editar ${escapeHTML(transaction.desc)}">✎</button>
           <button class="icon-btn danger" type="button" data-action="remove-transaction" data-id="${escapeHTML(transaction.id)}" aria-label="Excluir ${escapeHTML(transaction.desc)}">✕</button>
         </span>
@@ -545,14 +570,17 @@ function renderTrendChart() {
     transactions.filter((item) => monthKey(item.date) === key && item.type === "gasto").reduce((sum, item) => sum + item.amount, 0)
   );
 
+  const lastIndex = recentMonths.length - 1;
+  const barColors = (activeColor, mutedColor) => recentMonths.map((_, index) => (index === lastIndex ? activeColor : mutedColor));
+
   trendChart?.destroy();
   trendChart = new Chart(elements.trendCanvas, {
     type: "bar",
     data: {
       labels,
       datasets: [
-        { label: "Receitas", data: incomeValues, backgroundColor: "#cda45e", borderRadius: 4, maxBarThickness: 22 },
-        { label: "Gastos", data: expenseValues, backgroundColor: "#5c554a", borderRadius: 4, maxBarThickness: 22 },
+        { label: "Receitas", data: incomeValues, backgroundColor: barColors("#cda45e", "rgba(205,164,94,0.4)"), borderRadius: 4, maxBarThickness: 22 },
+        { label: "Gastos", data: expenseValues, backgroundColor: barColors("#8a8073", "rgba(92,85,74,0.4)"), borderRadius: 4, maxBarThickness: 22 },
       ],
     },
     options: {
@@ -600,6 +628,33 @@ async function exportBackup() {
   } catch (error) {
     showToast(error.message, true);
   }
+}
+
+function csvField(value) {
+  const text = String(value ?? "");
+  return /[;"\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function exportCsv() {
+  if (transactions.length === 0) {
+    showToast("Não há lançamentos para exportar.", true);
+    return;
+  }
+  const rows = [["Data", "Tipo", "Descrição", "Categoria", "Valor"]];
+  [...transactions]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach((item) => {
+      rows.push([item.date, item.type === "receita" ? "Receita" : "Gasto", item.desc, item.category, item.amount.toFixed(2).replace(".", ",")]);
+    });
+  const csv = "﻿" + rows.map((row) => row.map(csvField).join(";")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `nortis-lancamentos-${todayISO()}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+  showToast("CSV exportado.");
 }
 
 async function importBackup(file) {
@@ -656,6 +711,7 @@ function registerEvents() {
   });
 
   document.querySelector("#btnExport").addEventListener("click", exportBackup);
+  document.querySelector("#btnExportCsv").addEventListener("click", exportCsv);
   document.querySelector("#btnImport").addEventListener("click", () => elements.importFile.click());
   elements.importFile.addEventListener("change", () => importBackup(elements.importFile.files[0]));
   elements.btnLogout.addEventListener("click", logout);
@@ -710,6 +766,33 @@ function registerEvents() {
   elements.txSearch.addEventListener("input", refreshTransactions);
   elements.txTypeFilter.addEventListener("change", refreshTransactions);
 
+  const sortHeaders = document.querySelectorAll("thead th[data-sort]");
+  const updateSortIndicators = () => {
+    sortHeaders.forEach((th) => {
+      th.classList.remove("sort-asc", "sort-desc");
+      if (th.dataset.sort === txSort.key) th.classList.add(txSort.dir === "asc" ? "sort-asc" : "sort-desc");
+    });
+  };
+  const applySort = (key) => {
+    if (txSort.key === key) {
+      txSort.dir = txSort.dir === "asc" ? "desc" : "asc";
+    } else {
+      txSort = { key, dir: key === "amount" || key === "date" ? "desc" : "asc" };
+    }
+    updateSortIndicators();
+    refreshTransactions();
+  };
+  sortHeaders.forEach((th) => {
+    th.addEventListener("click", () => applySort(th.dataset.sort));
+    th.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        applySort(th.dataset.sort);
+      }
+    });
+  });
+  updateSortIndicators();
+
   elements.txForm.addEventListener("submit", addTransaction);
   elements.goalForm.addEventListener("submit", addGoal);
 
@@ -717,6 +800,7 @@ function registerEvents() {
     const button = event.target.closest("[data-action]");
     if (!button) return;
     if (button.dataset.action === "edit-transaction") editTransaction(button.dataset.id);
+    if (button.dataset.action === "duplicate-transaction") duplicateTransaction(button.dataset.id);
     if (button.dataset.action === "remove-transaction") removeTransaction(button.dataset.id);
   });
 

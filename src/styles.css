@@ -195,6 +195,11 @@ thead th {
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 500;
   position: sticky; top: 0; background: var(--panel);
 }
+thead th[data-sort] { cursor: pointer; user-select: none; }
+thead th[data-sort]:hover { color: var(--text); }
+thead th[data-sort]::after { display: inline-block; width: 12px; margin-left: 2px; opacity: 0.6; }
+thead th[data-sort].sort-asc::after { content: "↑"; opacity: 1; color: var(--gold); }
+thead th[data-sort].sort-desc::after { content: "↓"; opacity: 1; color: var(--gold); }
 th.align-right, td.align-right { text-align: right; }
 tbody td { padding: 13px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
