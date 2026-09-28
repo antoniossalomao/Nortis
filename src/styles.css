@@ -16,6 +16,8 @@
   --neg-dim: oklch(65% 0.008 55 / 10%);
   --gold: oklch(78% 0.1 83);
   --gold-dim: oklch(78% 0.1 83 / 13%);
+  --bad: oklch(68% 0.15 30);
+  --bad-dim: oklch(68% 0.15 30 / 14%);
   --radius: 12px;
   --radius-sm: 8px;
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 22px 44px -26px rgba(0, 0, 0, 0.6);
@@ -62,7 +64,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 /* Layout */
-.app { display: flex; height: 100vh; }
+.app { display: flex; height: 100vh; opacity: 0; transition: opacity 0.35s ease; }
+.app.ready { opacity: 1; }
 
 .sidebar {
   width: 88px; min-width: 88px; height: 100%;
@@ -126,6 +129,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: linear-gradient(160deg, oklch(80% 0.1 83), oklch(72% 0.1 82));
 }
 .btn.solid:hover { filter: brightness(1.05); }
+.btn.solid.danger-solid { background: linear-gradient(160deg, oklch(72% 0.15 30), oklch(62% 0.15 28)); color: oklch(97% 0.01 30); }
 
 .icon-btn {
   border: none; background: none; color: var(--text-faint); width: 28px; height: 28px;
@@ -147,6 +151,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .kpi-value { font-family: var(--serif); font-size: 25px; font-weight: 500; }
 .kpi-value.pos { color: var(--pos); }
 .kpi-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 8px; }
+.kpi-delta { font-size: 11px; color: var(--text-faint); margin-top: 6px; font-weight: 500; }
+.kpi-delta.good { color: var(--pos); }
+.kpi-delta.bad { color: var(--bad); }
 
 /* Cards / charts */
 .grid2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; }
@@ -188,6 +195,11 @@ thead th {
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 500;
   position: sticky; top: 0; background: var(--panel);
 }
+thead th[data-sort] { cursor: pointer; user-select: none; }
+thead th[data-sort]:hover { color: var(--text); }
+thead th[data-sort]::after { display: inline-block; width: 12px; margin-left: 2px; opacity: 0.6; }
+thead th[data-sort].sort-asc::after { content: "↑"; opacity: 1; color: var(--gold); }
+thead th[data-sort].sort-desc::after { content: "↓"; opacity: 1; color: var(--gold); }
 th.align-right, td.align-right { text-align: right; }
 tbody td { padding: 13px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
@@ -213,6 +225,7 @@ tbody tr:last-child td { border-bottom: none; }
 .bar-fill { height: 100%; background: var(--gold); border-radius: 999px; }
 .goal-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .goal-pct { font-size: 11.5px; color: var(--text-faint); }
+.goal-pct .overdue { color: var(--bad); }
 .goal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip {
   padding: 7px 13px; border-radius: 999px; border: 1px solid var(--border); background: none;
@@ -233,8 +246,12 @@ tbody tr:last-child td { border-bottom: none; }
   padding: 26px 26px 28px; transform: translateY(8px) scale(0.98); transition: 0.15s;
 }
 .modal-bg.show .modal { transform: translateY(0) scale(1); }
+.modal.modal-sm { width: min(360px, calc(100vw - 40px)); }
 .modal-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .modal-title h2 { font-family: var(--serif); font-size: 19px; font-weight: 500; }
+.modal-message { color: var(--text-dim); font-size: 13.5px; line-height: 1.55; margin-bottom: 22px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.modal-actions .btn { padding: 10px 16px; }
 .close-btn { background: none; border: none; color: var(--text-faint); font-size: 20px; line-height: 1; padding: 4px; }
 .close-btn:hover { color: var(--text); }
 
@@ -245,6 +262,16 @@ tbody tr:last-child td { border-bottom: none; }
   background: oklch(8% 0.004 50); color: var(--text); font-size: 13.5px;
 }
 .field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px oklch(78% 0.1 83 / 12%); }
+
+.input-with-action { position: relative; }
+.input-with-action input { padding-right: 42px; }
+.field-action {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  width: 28px; height: 28px; border: none; background: none; color: var(--text-faint);
+  display: grid; place-items: center; border-radius: 6px;
+}
+.field-action:hover { color: var(--text); background: var(--panel-2); }
+.field-action.active { color: var(--gold); }
 
 .type-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
 .type-toggle button {

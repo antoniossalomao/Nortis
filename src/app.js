@@ -18,8 +18,12 @@ let lastFocusedElement;
 let toastTimer;
 let editingTransactionId = null;
 let editingGoalId = null;
+let resolveConfirm = null;
+let resolvePrompt = null;
+let txSort = { key: "date", dir: "desc" };
 
 const elements = {
+  appRoot: document.querySelector(".app"),
   monthLabel: document.querySelector("#monthLabel"),
   kpiIncome: document.querySelector("#kpiIncome"),
   kpiIncomeSub: document.querySelector("#kpiIncomeSub"),
@@ -51,6 +55,7 @@ const elements = {
   gName: document.querySelector("#gName"),
   gTarget: document.querySelector("#gTarget"),
   gCurrent: document.querySelector("#gCurrent"),
+  gTargetDate: document.querySelector("#gTargetDate"),
   toast: document.querySelector("#toast"),
   txModalTitle: document.querySelector("#modalTxTitle"),
   txSubmit: document.querySelector("#txSubmit"),
@@ -59,6 +64,16 @@ const elements = {
   importFile: document.querySelector("#importFile"),
   storageLabel: document.querySelector("#storageLabel"),
   btnLogout: document.querySelector("#btnLogout"),
+  kpiIncomeDelta: document.querySelector("#kpiIncomeDelta"),
+  kpiExpenseDelta: document.querySelector("#kpiExpenseDelta"),
+  kpiBalanceDelta: document.querySelector("#kpiBalanceDelta"),
+  confirmMessage: document.querySelector("#confirmMessage"),
+  confirmOkBtn: document.querySelector("#confirmOkBtn"),
+  confirmCancelBtn: document.querySelector("#confirmCancelBtn"),
+  promptTitle: document.querySelector("#promptTitle"),
+  promptForm: document.querySelector("#promptForm"),
+  promptInput: document.querySelector("#promptInput"),
+  promptCancelBtn: document.querySelector("#promptCancelBtn"),
 };
 
 function todayISO() {
@@ -116,7 +131,36 @@ function closeModals() {
     modal.classList.remove("show");
     modal.setAttribute("aria-hidden", "true");
   });
+  if (resolveConfirm) {
+    resolveConfirm(false);
+    resolveConfirm = null;
+  }
+  if (resolvePrompt) {
+    resolvePrompt(null);
+    resolvePrompt = null;
+  }
   lastFocusedElement?.focus?.();
+}
+
+/** Themed replacement for window.confirm(); resolves true/false. */
+function showConfirm(message, { confirmLabel = "Excluir", danger = true } = {}) {
+  return new Promise((resolve) => {
+    resolveConfirm = resolve;
+    elements.confirmMessage.textContent = message;
+    elements.confirmOkBtn.textContent = confirmLabel;
+    elements.confirmOkBtn.classList.toggle("danger-solid", danger);
+    openModal("modalConfirm");
+  });
+}
+
+/** Themed replacement for window.prompt(); resolves a number or null if cancelled. */
+function showAmountPrompt(title) {
+  return new Promise((resolve) => {
+    resolvePrompt = resolve;
+    elements.promptTitle.textContent = title;
+    elements.promptInput.value = "";
+    openModal("modalPrompt");
+  });
 }
 
 function setFormSaving(form, button, saving) {
@@ -204,9 +248,25 @@ function editTransaction(id) {
   openModal("modalTx");
 }
 
+function duplicateTransaction(id) {
+  const transaction = transactions.find((item) => item.id === id);
+  if (!transaction) return;
+  editingTransactionId = null;
+  elements.txModalTitle.textContent = "Duplicar lançamento";
+  elements.txSubmit.textContent = "Adicionar lançamento";
+  setTxType(transaction.type);
+  elements.fDesc.value = transaction.desc;
+  elements.fAmount.value = transaction.amount;
+  elements.fCategory.value = transaction.category;
+  elements.fDate.value = todayISO();
+  openModal("modalTx");
+}
+
 async function removeTransaction(id) {
   const transaction = transactions.find((item) => item.id === id);
-  if (!transaction || !window.confirm(`Excluir o lançamento "${transaction.desc}"?`)) return;
+  if (!transaction) return;
+  const confirmed = await showConfirm(`Excluir o lançamento "${transaction.desc}"? Essa ação não pode ser desfeita.`);
+  if (!confirmed) return;
   try {
     await window.nortis.transactions.remove(id);
     transactions = transactions.filter((item) => item.id !== id);
@@ -226,6 +286,7 @@ async function addGoal(event) {
     name: elements.gName.value.trim(),
     target: Number(elements.gTarget.value),
     current: Number(elements.gCurrent.value) || 0,
+    targetDate: elements.gTargetDate.value || null,
   };
   setFormSaving(elements.goalForm, elements.goalSubmit, true);
   try {
@@ -261,12 +322,15 @@ function editGoal(id) {
   elements.gCurrent.value = "";
   elements.gCurrent.disabled = true;
   elements.gCurrent.closest(".field").hidden = true;
+  elements.gTargetDate.value = goal.targetDate || "";
   openModal("modalGoal");
 }
 
 async function removeGoal(id) {
   const goal = goals.find((item) => item.id === id);
-  if (!goal || !window.confirm(`Excluir a meta "${goal.name}"?`)) return;
+  if (!goal) return;
+  const confirmed = await showConfirm(`Excluir a meta "${goal.name}"? Essa ação não pode ser desfeita.`);
+  if (!confirmed) return;
   try {
     await window.nortis.goals.remove(id);
     goals = goals.filter((item) => item.id !== id);
@@ -297,6 +361,31 @@ function getRecentMonthKeys() {
   });
 }
 
+function previousMonthKey(monthStr) {
+  const [year, month] = monthStr.split("-").map(Number);
+  const date = new Date(year, month - 2, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function applyDelta(element, current, previous, favorableWhenHigher) {
+  if (!previous) {
+    element.textContent = "";
+    element.className = "kpi-delta";
+    return;
+  }
+  const diff = current - previous;
+  if (Math.abs(diff) < 0.005) {
+    element.textContent = "estável vs mês anterior";
+    element.className = "kpi-delta";
+    return;
+  }
+  const rising = diff > 0;
+  const favorable = rising === favorableWhenHigher;
+  const pct = Math.min(999, Math.abs((diff / previous) * 100));
+  element.textContent = `${rising ? "▲" : "▼"} ${pct.toFixed(0)}% vs mês anterior`;
+  element.className = `kpi-delta ${favorable ? "good" : "bad"}`;
+}
+
 function renderSummary(monthTransactions) {
   const incomeTransactions = monthTransactions.filter((item) => item.type === "receita");
   const expenseTransactions = monthTransactions.filter((item) => item.type === "gasto");
@@ -304,6 +393,10 @@ function renderSummary(monthTransactions) {
   const expense = expenseTransactions.reduce((sum, item) => sum + item.amount, 0);
   const balance = income - expense;
   const rate = income > 0 ? (balance / income) * 100 : null;
+
+  const previousMonthTransactions = transactions.filter((item) => monthKey(item.date) === previousMonthKey(currentMonth));
+  const previousIncome = previousMonthTransactions.filter((item) => item.type === "receita").reduce((sum, item) => sum + item.amount, 0);
+  const previousExpense = previousMonthTransactions.filter((item) => item.type === "gasto").reduce((sum, item) => sum + item.amount, 0);
 
   elements.kpiIncome.textContent = formatCurrency(income);
   elements.kpiExpense.textContent = formatCurrency(expense);
@@ -313,8 +406,20 @@ function renderSummary(monthTransactions) {
   elements.kpiIncomeSub.textContent = `${incomeTransactions.length} ${incomeTransactions.length === 1 ? "entrada" : "entradas"}`;
   elements.kpiExpenseSub.textContent = `${expenseTransactions.length} ${expenseTransactions.length === 1 ? "saída" : "saídas"}`;
   elements.kpiBalanceSub.textContent = balance >= 0 ? "positivo no mês" : "negativo no mês";
+  applyDelta(elements.kpiIncomeDelta, income, previousIncome, true);
+  applyDelta(elements.kpiExpenseDelta, expense, previousExpense, false);
+  applyDelta(elements.kpiBalanceDelta, balance, previousIncome - previousExpense, true);
 
   return { income, expense };
+}
+
+function sortTransactions(list) {
+  const { key, dir } = txSort;
+  const factor = dir === "asc" ? 1 : -1;
+  return [...list].sort((a, b) => {
+    const diff = key === "amount" ? a.amount - b.amount : a[key].localeCompare(b[key], "pt-BR");
+    return diff * factor || a.date.localeCompare(b.date);
+  });
 }
 
 function renderTransactions(monthTransactions) {
@@ -324,7 +429,7 @@ function renderTransactions(monthTransactions) {
   const filtered = monthTransactions.filter(
     (item) => (!type || item.type === type) && (!query || normalizeSearch(`${item.desc} ${item.category}`).includes(query))
   );
-  const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = sortTransactions(filtered);
   elements.txCount.textContent =
     query || type ? `${sorted.length} de ${monthTransactions.length} lançamentos` : `${sorted.length} ${sorted.length === 1 ? "lançamento" : "lançamentos"}`;
   elements.txEmpty.hidden = sorted.length > 0;
@@ -339,6 +444,7 @@ function renderTransactions(monthTransactions) {
       <td class="align-right ${transaction.type === "receita" ? "amt-in" : "amt-out"}">${transaction.type === "receita" ? "+" : "−"} ${formatCurrency(transaction.amount)}</td>
       <td class="row-actions">
         <span class="inline-actions">
+          <button class="icon-btn" type="button" data-action="duplicate-transaction" data-id="${escapeHTML(transaction.id)}" aria-label="Duplicar ${escapeHTML(transaction.desc)}">⧉</button>
           <button class="icon-btn" type="button" data-action="edit-transaction" data-id="${escapeHTML(transaction.id)}" aria-label="Editar ${escapeHTML(transaction.desc)}">✎</button>
           <button class="icon-btn danger" type="button" data-action="remove-transaction" data-id="${escapeHTML(transaction.id)}" aria-label="Excluir ${escapeHTML(transaction.desc)}">✕</button>
         </span>
@@ -349,11 +455,23 @@ function renderTransactions(monthTransactions) {
     .join("");
 }
 
+function goalDeadlineText(goal) {
+  if (!goal.targetDate || goal.current >= goal.target) return "";
+  const diffDays = Math.round((new Date(`${goal.targetDate}T00:00:00`) - new Date(`${todayISO()}T00:00:00`)) / 86400000);
+  if (diffDays < 0) return "prazo vencido";
+  if (diffDays === 0) return "vence hoje";
+  return diffDays === 1 ? "1 dia restante" : `${diffDays} dias restantes`;
+}
+
 function renderGoals() {
   elements.goalsEmpty.hidden = goals.length > 0;
   elements.goalsList.innerHTML = goals
     .map((goal) => {
       const percentage = Math.min(100, (goal.current / goal.target) * 100);
+      const deadline = goalDeadlineText(goal);
+      const deadlineHTML = deadline
+        ? ` · <span class="${deadline === "prazo vencido" ? "overdue" : ""}">${escapeHTML(deadline)}</span>`
+        : "";
       return `
       <div class="goal">
         <div class="goal-top">
@@ -368,7 +486,7 @@ function renderGoals() {
           <div class="bar-fill" style="width: ${percentage}%"></div>
         </div>
         <div class="goal-foot">
-          <span class="goal-pct">${percentage.toFixed(0)}%</span>
+          <span class="goal-pct">${percentage.toFixed(0)}%${deadlineHTML}</span>
           <div class="goal-actions">
             <button class="chip" type="button" data-action="increase-goal" data-id="${escapeHTML(goal.id)}" data-amount="50">+R$ 50</button>
             <button class="chip" type="button" data-action="increase-goal" data-id="${escapeHTML(goal.id)}" data-amount="100">+R$ 100</button>
@@ -452,14 +570,17 @@ function renderTrendChart() {
     transactions.filter((item) => monthKey(item.date) === key && item.type === "gasto").reduce((sum, item) => sum + item.amount, 0)
   );
 
+  const lastIndex = recentMonths.length - 1;
+  const barColors = (activeColor, mutedColor) => recentMonths.map((_, index) => (index === lastIndex ? activeColor : mutedColor));
+
   trendChart?.destroy();
   trendChart = new Chart(elements.trendCanvas, {
     type: "bar",
     data: {
       labels,
       datasets: [
-        { label: "Receitas", data: incomeValues, backgroundColor: "#cda45e", borderRadius: 4, maxBarThickness: 22 },
-        { label: "Gastos", data: expenseValues, backgroundColor: "#5c554a", borderRadius: 4, maxBarThickness: 22 },
+        { label: "Receitas", data: incomeValues, backgroundColor: barColors("#cda45e", "rgba(205,164,94,0.4)"), borderRadius: 4, maxBarThickness: 22 },
+        { label: "Gastos", data: expenseValues, backgroundColor: barColors("#8a8073", "rgba(92,85,74,0.4)"), borderRadius: 4, maxBarThickness: 22 },
       ],
     },
     options: {
@@ -509,11 +630,42 @@ async function exportBackup() {
   }
 }
 
+function csvField(value) {
+  const text = String(value ?? "");
+  return /[;"\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function exportCsv() {
+  if (transactions.length === 0) {
+    showToast("Não há lançamentos para exportar.", true);
+    return;
+  }
+  const rows = [["Data", "Tipo", "Descrição", "Categoria", "Valor"]];
+  [...transactions]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach((item) => {
+      rows.push([item.date, item.type === "receita" ? "Receita" : "Gasto", item.desc, item.category, item.amount.toFixed(2).replace(".", ",")]);
+    });
+  const csv = "﻿" + rows.map((row) => row.map(csvField).join(";")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `nortis-lancamentos-${todayISO()}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+  showToast("CSV exportado.");
+}
+
 async function importBackup(file) {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    if (!window.confirm("Importar este backup substituirá os lançamentos e metas atuais. Continuar?")) return;
+    const confirmed = await showConfirm("Importar este backup substituirá os lançamentos e metas atuais. Continuar?", {
+      confirmLabel: "Importar",
+      danger: false,
+    });
+    if (!confirmed) return;
     const imported = await window.nortis.backup.import({ ...data, replace: true });
     applyBootstrap(imported);
     render();
@@ -559,6 +711,7 @@ function registerEvents() {
   });
 
   document.querySelector("#btnExport").addEventListener("click", exportBackup);
+  document.querySelector("#btnExportCsv").addEventListener("click", exportCsv);
   document.querySelector("#btnImport").addEventListener("click", () => elements.importFile.click());
   elements.importFile.addEventListener("change", () => importBackup(elements.importFile.files[0]));
   elements.btnLogout.addEventListener("click", logout);
@@ -572,6 +725,21 @@ function registerEvents() {
     backdrop.addEventListener("click", (event) => {
       if (event.target === backdrop) closeModals();
     });
+  });
+
+  elements.confirmOkBtn.addEventListener("click", () => {
+    resolveConfirm?.(true);
+    resolveConfirm = null;
+    closeModals();
+  });
+  elements.confirmCancelBtn.addEventListener("click", closeModals);
+  elements.promptCancelBtn.addEventListener("click", closeModals);
+  elements.promptForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const value = Number(elements.promptInput.value.replace(",", "."));
+    resolvePrompt?.(Number.isFinite(value) ? value : null);
+    resolvePrompt = null;
+    closeModals();
   });
 
   document.addEventListener("keydown", (event) => {
@@ -598,6 +766,33 @@ function registerEvents() {
   elements.txSearch.addEventListener("input", refreshTransactions);
   elements.txTypeFilter.addEventListener("change", refreshTransactions);
 
+  const sortHeaders = document.querySelectorAll("thead th[data-sort]");
+  const updateSortIndicators = () => {
+    sortHeaders.forEach((th) => {
+      th.classList.remove("sort-asc", "sort-desc");
+      if (th.dataset.sort === txSort.key) th.classList.add(txSort.dir === "asc" ? "sort-asc" : "sort-desc");
+    });
+  };
+  const applySort = (key) => {
+    if (txSort.key === key) {
+      txSort.dir = txSort.dir === "asc" ? "desc" : "asc";
+    } else {
+      txSort = { key, dir: key === "amount" || key === "date" ? "desc" : "asc" };
+    }
+    updateSortIndicators();
+    refreshTransactions();
+  };
+  sortHeaders.forEach((th) => {
+    th.addEventListener("click", () => applySort(th.dataset.sort));
+    th.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        applySort(th.dataset.sort);
+      }
+    });
+  });
+  updateSortIndicators();
+
   elements.txForm.addEventListener("submit", addTransaction);
   elements.goalForm.addEventListener("submit", addGoal);
 
@@ -605,18 +800,19 @@ function registerEvents() {
     const button = event.target.closest("[data-action]");
     if (!button) return;
     if (button.dataset.action === "edit-transaction") editTransaction(button.dataset.id);
+    if (button.dataset.action === "duplicate-transaction") duplicateTransaction(button.dataset.id);
     if (button.dataset.action === "remove-transaction") removeTransaction(button.dataset.id);
   });
 
-  elements.goalsList.addEventListener("click", (event) => {
+  elements.goalsList.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
     if (button.dataset.action === "remove-goal") removeGoal(button.dataset.id);
     if (button.dataset.action === "edit-goal") editGoal(button.dataset.id);
     if (button.dataset.action === "increase-goal") increaseGoal(button.dataset.id, Number(button.dataset.amount));
     if (button.dataset.action === "custom-goal") {
-      const value = window.prompt("Valor da contribuição (R$):");
-      if (value !== null) increaseGoal(button.dataset.id, Number(value.replace(",", ".")));
+      const value = await showAmountPrompt("Valor da contribuição (R$)");
+      if (value !== null && value > 0) increaseGoal(button.dataset.id, value);
     }
   });
 }
@@ -625,9 +821,9 @@ async function init() {
   registerEvents();
   setTxType("gasto");
   try {
-    const loaded = await window.nortis.bootstrap();
+    const [loaded, user] = await Promise.all([window.nortis.bootstrap(), window.nortis.auth.me()]);
     applyBootstrap(loaded);
-    elements.storageLabel.textContent = "Antonio Salomão · conta principal";
+    elements.storageLabel.textContent = `${user.name} · conta principal`;
     render();
   } catch (error) {
     if (error?.message?.includes("autenticado")) {
@@ -638,6 +834,8 @@ async function init() {
     showToast(error.message, true);
     render();
   }
+
+  elements.appRoot?.classList.add("ready");
 
   if (typeof Chart === "undefined") {
     showToast("Os gráficos não carregaram.", true);

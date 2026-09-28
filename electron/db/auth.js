@@ -136,7 +136,14 @@ function createAuthApi(db) {
     return user.id;
   }
 
-  return { register, login };
+  /** Returns the display name and email of the given user. */
+  function me(userId) {
+    const user = db.prepare("SELECT name, email FROM users WHERE id = ? AND deleted_at IS NULL").get(userId);
+    if (!user) throw new Error("Usuário não encontrado.");
+    return user;
+  }
+
+  return { register, login, me };
 }
 
 module.exports = { createAuthApi };

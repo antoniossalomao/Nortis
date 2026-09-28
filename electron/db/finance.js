@@ -55,6 +55,12 @@ function cents(value, field = "amount", allowZero = false) {
   return result;
 }
 
+function optionalDate(data, key) {
+  const raw = data ? data[key] : undefined;
+  if (raw === undefined || raw === null || raw === "") return null;
+  return requireDate(data, key);
+}
+
 function transactionKind(value) {
   if (value === "receita" || value === "income") return "income";
   if (value === "gasto" || value === "expense") return "expense";
@@ -230,13 +236,19 @@ function createFinanceApi(db) {
   function findGoal(userId, id) {
     const row = db
       .prepare(
-        `SELECT g.public_id AS id, g.name, g.target_cents, COALESCE(SUM(gc.amount_cents), 0) AS current_cents
+        `SELECT g.public_id AS id, g.name, g.target_cents, COALESCE(SUM(gc.amount_cents), 0) AS current_cents, g.target_date
          FROM goals g LEFT JOIN goal_contributions gc ON gc.goal_id = g.id
          WHERE g.public_id = ? AND g.user_id = ? AND g.archived_at IS NULL GROUP BY g.id`
       )
       .get(id, userId);
     if (!row) throw new Error("Meta não encontrada.");
-    return { id: row.id, name: row.name, target: row.target_cents / 100, current: row.current_cents / 100 };
+    return {
+      id: row.id,
+      name: row.name,
+      target: row.target_cents / 100,
+      current: row.current_cents / 100,
+      targetDate: row.target_date,
+    };
   }
 
   function createGoal(userId, data) {
@@ -244,9 +256,10 @@ function createFinanceApi(db) {
       const id = publicId("goal");
       const target = cents(data.target, "target");
       const initial = cents(data.current ?? 0, "current", true);
+      const targetDate = optionalDate(data, "targetDate");
       const result = db
-        .prepare("INSERT INTO goals (public_id, user_id, name, target_cents) VALUES (?, ?, ?, ?)")
-        .run(id, userId, requireText(data, "name", 80), target);
+        .prepare("INSERT INTO goals (public_id, user_id, name, target_cents, target_date) VALUES (?, ?, ?, ?, ?)")
+        .run(id, userId, requireText(data, "name", 80), target, targetDate);
       if (initial > 0) {
         db.prepare(
           "INSERT INTO goal_contributions (public_id, goal_id, amount_cents, contributed_on, notes) VALUES (?, ?, ?, ?, ?)"
@@ -261,8 +274,8 @@ function createFinanceApi(db) {
     return db.transaction(() => {
       ensureExists(userId, "goals", id);
       db.prepare(
-        "UPDATE goals SET name = ?, target_cents = ?, updated_at = CURRENT_TIMESTAMP WHERE public_id = ? AND user_id = ? AND archived_at IS NULL"
-      ).run(requireText(data, "name", 80), cents(data.target, "target"), id, userId);
+        "UPDATE goals SET name = ?, target_cents = ?, target_date = ?, updated_at = CURRENT_TIMESTAMP WHERE public_id = ? AND user_id = ? AND archived_at IS NULL"
+      ).run(requireText(data, "name", 80), cents(data.target, "target"), optionalDate(data, "targetDate"), id, userId);
       audit(userId, "goal", id, "updated", data);
       return findGoal(userId, id);
     })();
