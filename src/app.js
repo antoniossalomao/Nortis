@@ -8,6 +8,8 @@ let CATEGORIES = {
 const DONUT_COLORS = ["#cda45e", "#a3814a", "#7a5f3a", "#544433", "#332a20", "#241d16"];
 const MONTH_NAMES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
+const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
 let transactions = [];
 let goals = [];
 let currentTxType = "gasto";
@@ -37,6 +39,7 @@ const elements = {
   txEmpty: document.querySelector("#txEmpty"),
   txSearch: document.querySelector("#txSearch"),
   txTypeFilter: document.querySelector("#txTypeFilter"),
+  txCategoryFilter: document.querySelector("#txCategoryFilter"),
   goalsList: document.querySelector("#goalsList"),
   goalsEmpty: document.querySelector("#goalsEmpty"),
   catTotal: document.querySelector("#catTotal"),
@@ -85,7 +88,7 @@ function todayISO() {
 }
 
 function formatCurrency(value) {
-  return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return currencyFormatter.format(Number(value || 0));
 }
 
 function monthKey(date) {
@@ -106,6 +109,12 @@ function applyBootstrap(data) {
       if (CATEGORIES[item.type] && !CATEGORIES[item.type].includes(item.name)) CATEGORIES[item.type].push(item.name);
     });
   }
+
+  if (elements.txCategoryFilter) {
+    const allCategories = Array.from(new Set([...CATEGORIES.receita, ...CATEGORIES.gasto])).sort();
+    elements.txCategoryFilter.innerHTML = '<option value="">Todas categorias</option>' +
+      allCategories.map(cat => `<option value="${escapeHTML(cat)}">${escapeHTML(cat)}</option>`).join("");
+  }
 }
 
 function showToast(message, isError = false) {
@@ -122,7 +131,10 @@ function openModal(modalId) {
   lastFocusedElement = document.activeElement;
   modal.classList.add("show");
   modal.setAttribute("aria-hidden", "false");
-  requestAnimationFrame(() => modal.querySelector("input, button, select")?.focus());
+  requestAnimationFrame(() => {
+    const focusable = modal.querySelector("input:not([type='hidden']), select, button");
+    focusable?.focus();
+  });
 }
 
 function closeModals() {
@@ -426,8 +438,11 @@ function renderTransactions(monthTransactions) {
   const normalizeSearch = (value) => value.normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]", "g"), "").toLocaleLowerCase("pt-BR");
   const query = normalizeSearch(elements.txSearch.value.trim());
   const type = elements.txTypeFilter.value;
+  const category = elements.txCategoryFilter ? elements.txCategoryFilter.value : "";
   const filtered = monthTransactions.filter(
-    (item) => (!type || item.type === type) && (!query || normalizeSearch(`${item.desc} ${item.category}`).includes(query))
+    (item) => (!type || item.type === type) &&
+              (!category || item.category === category) &&
+              (!query || normalizeSearch(`${item.desc} ${item.category}`).includes(query))
   );
   const sorted = sortTransactions(filtered);
   elements.txCount.textContent =
@@ -765,6 +780,9 @@ function registerEvents() {
   const refreshTransactions = () => renderTransactions(transactions.filter((item) => monthKey(item.date) === currentMonth));
   elements.txSearch.addEventListener("input", refreshTransactions);
   elements.txTypeFilter.addEventListener("change", refreshTransactions);
+  if (elements.txCategoryFilter) {
+    elements.txCategoryFilter.addEventListener("change", refreshTransactions);
+  }
 
   const sortHeaders = document.querySelectorAll("thead th[data-sort]");
   const updateSortIndicators = () => {

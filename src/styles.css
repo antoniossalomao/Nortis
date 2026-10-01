@@ -86,6 +86,18 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .nav-item {
   width: 44px; height: 44px; border-radius: var(--radius-sm); border: none; background: transparent;
   display: grid; place-items: center; color: var(--text-faint);
+  position: relative;
+}
+
+.nav-item[title]::after {
+  content: attr(title); position: absolute; left: 100%; margin-left: 10px;
+  background: var(--panel); border: 1px solid var(--border); padding: 4px 8px;
+  border-radius: 6px; font-size: 11px; color: var(--text);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s; white-space: nowrap; z-index: 100;
+}
+
+.nav-item[title]:hover::after {
+  opacity: 1;
 }
 
 .nav-item svg { stroke: currentColor; }
@@ -260,6 +272,7 @@ tbody tr:last-child td { border-bottom: none; }
 .field input, .field select {
   width: 100%; padding: 11px 13px; border: 1px solid var(--border-strong); border-radius: 9px;
   background: oklch(8% 0.004 50); color: var(--text); font-size: 13.5px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px oklch(78% 0.1 83 / 12%); }
 
