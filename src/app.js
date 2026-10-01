@@ -40,6 +40,7 @@ const elements = {
   txSearch: document.querySelector("#txSearch"),
   txTypeFilter: document.querySelector("#txTypeFilter"),
   txCategoryFilter: document.querySelector("#txCategoryFilter"),
+  btnClearFilters: document.querySelector("#btnClearFilters"),
   goalsList: document.querySelector("#goalsList"),
   goalsEmpty: document.querySelector("#goalsEmpty"),
   catTotal: document.querySelector("#catTotal"),
@@ -439,6 +440,11 @@ function renderTransactions(monthTransactions) {
   const query = normalizeSearch(elements.txSearch.value.trim());
   const type = elements.txTypeFilter.value;
   const category = elements.txCategoryFilter ? elements.txCategoryFilter.value : "";
+
+  if (elements.btnClearFilters) {
+    elements.btnClearFilters.hidden = !(query || type || category);
+  }
+
   const filtered = monthTransactions.filter(
     (item) => (!type || item.type === type) &&
               (!category || item.category === category) &&
@@ -446,9 +452,9 @@ function renderTransactions(monthTransactions) {
   );
   const sorted = sortTransactions(filtered);
   elements.txCount.textContent =
-    query || type ? `${sorted.length} de ${monthTransactions.length} lançamentos` : `${sorted.length} ${sorted.length === 1 ? "lançamento" : "lançamentos"}`;
+    query || type || category ? `${sorted.length} de ${monthTransactions.length} lançamentos` : `${sorted.length} ${sorted.length === 1 ? "lançamento" : "lançamentos"}`;
   elements.txEmpty.hidden = sorted.length > 0;
-  elements.txEmpty.textContent = query || type ? "Nenhum lançamento corresponde aos filtros deste mês." : "Nenhum lançamento neste mês";
+  elements.txEmpty.textContent = query || type || category ? "Nenhum lançamento corresponde aos filtros deste mês." : "Nenhum lançamento neste mês";
   elements.txBody.innerHTML = sorted
     .map(
       (transaction) => `
@@ -782,6 +788,15 @@ function registerEvents() {
   elements.txTypeFilter.addEventListener("change", refreshTransactions);
   if (elements.txCategoryFilter) {
     elements.txCategoryFilter.addEventListener("change", refreshTransactions);
+  }
+
+  if (elements.btnClearFilters) {
+    elements.btnClearFilters.addEventListener("click", () => {
+      elements.txSearch.value = "";
+      elements.txTypeFilter.value = "";
+      if (elements.txCategoryFilter) elements.txCategoryFilter.value = "";
+      refreshTransactions();
+    });
   }
 
   const sortHeaders = document.querySelectorAll("thead th[data-sort]");
