@@ -63,6 +63,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: oklch(27% 0.008 50 / 80%); border-radius: 5px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: oklch(37% 0.01 50 / 90%); }
+
 /* Layout */
 .app { display: flex; height: 100vh; opacity: 0; transition: opacity 0.35s ease; }
 .app.ready { opacity: 1; }
@@ -86,6 +92,18 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .nav-item {
   width: 44px; height: 44px; border-radius: var(--radius-sm); border: none; background: transparent;
   display: grid; place-items: center; color: var(--text-faint);
+  position: relative;
+}
+
+.nav-item[title]::after {
+  content: attr(title); position: absolute; left: 100%; margin-left: 10px;
+  background: var(--panel); border: 1px solid var(--border); padding: 4px 8px;
+  border-radius: 6px; font-size: 11px; color: var(--text);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s; white-space: nowrap; z-index: 100;
+}
+
+.nav-item[title]:hover::after {
+  opacity: 1;
 }
 
 .nav-item svg { stroke: currentColor; }
@@ -123,6 +141,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .btn:hover { background: oklch(78% 0.1 83 / 20%); }
 .btn.ghost { border-color: var(--border); background: transparent; color: var(--text-dim); }
 .btn.ghost:hover { border-color: var(--border-strong); color: var(--text); }
+.btn.btn-sm { padding: 8px 12px; font-size: 11.5px; }
 .btn.full { width: 100%; justify-content: center; }
 .btn.solid {
   border: none; color: oklch(16% 0.006 50);
@@ -201,6 +220,8 @@ thead th[data-sort]::after { display: inline-block; width: 12px; margin-left: 2p
 thead th[data-sort].sort-asc::after { content: "↑"; opacity: 1; color: var(--gold); }
 thead th[data-sort].sort-desc::after { content: "↓"; opacity: 1; color: var(--gold); }
 th.align-right, td.align-right { text-align: right; }
+tbody tr { transition: background 0.15s; }
+tbody tr:hover { background: var(--panel-2); }
 tbody td { padding: 13px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
 .date-cell { color: var(--text-faint); white-space: nowrap; }
@@ -260,6 +281,7 @@ tbody tr:last-child td { border-bottom: none; }
 .field input, .field select {
   width: 100%; padding: 11px 13px; border: 1px solid var(--border-strong); border-radius: 9px;
   background: oklch(8% 0.004 50); color: var(--text); font-size: 13.5px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px oklch(78% 0.1 83 / 12%); }
 
