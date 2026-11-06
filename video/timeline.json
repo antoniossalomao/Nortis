@@ -1,0 +1,101 @@
+{
+ "total": 99.17,
+ "scenes": [
+  {
+   "id": "s1",
+   "txt": "Pra onde foi o seu dinheiro este mês? Quanto sobrou? E aquela meta… ainda está de pé?",
+   "start": 0.0,
+   "voice": 0.8,
+   "dur": 5.808,
+   "end": 7.308
+  },
+  {
+   "id": "s2",
+   "txt": "Planilha esquecida, extrato do banco, anotação no celular. No fim do mês, a conta nunca fecha.",
+   "start": 7.308,
+   "voice": 7.858,
+   "dur": 7.056,
+   "end": 15.614
+  },
+  {
+   "id": "s3",
+   "txt": "Conheça o Nortis. O seu painel financeiro pessoal.",
+   "start": 15.614,
+   "voice": 16.314,
+   "dur": 3.744,
+   "end": 21.958
+  },
+  {
+   "id": "s4",
+   "txt": "Abra o app e o mês inteiro está ali: receitas, gastos, saldo e quanto você conseguiu guardar. Tudo comparado com o mês anterior.",
+   "start": 21.958,
+   "voice": 22.508,
+   "dur": 8.472,
+   "end": 31.68
+  },
+  {
+   "id": "s5",
+   "txt": "Registrar é rápido. Descrição, valor, categoria e data. Pronto: o painel se atualiza na hora.",
+   "start": 31.68,
+   "voice": 32.23,
+   "dur": 7.8,
+   "end": 41.63
+  },
+  {
+   "id": "s6",
+   "txt": "O fluxo dos últimos seis meses mostra a tendência. E o gráfico por categoria revela pra onde o dinheiro realmente vai.",
+   "start": 41.63,
+   "voice": 42.18,
+   "dur": 7.32,
+   "end": 50.2
+  },
+  {
+   "id": "s7",
+   "txt": "Precisa achar um gasto? Busque pela descrição, filtre por tipo ou categoria, e ordene a tabela como quiser.",
+   "start": 50.2,
+   "voice": 50.75,
+   "dur": 7.032,
+   "end": 58.482
+  },
+  {
+   "id": "s8",
+   "txt": "Crie metas de economia com valor e prazo. O Nortis mostra quanto falta, quantos dias restam, e você contribui com um clique.",
+   "start": 58.482,
+   "voice": 59.032,
+   "dur": 7.632,
+   "end": 67.864
+  },
+  {
+   "id": "s9",
+   "txt": "Seus dados ficam no seu computador. Sem servidor, sem internet. Cada pessoa com a sua própria conta e senha.",
+   "start": 67.864,
+   "voice": 68.414,
+   "dur": 7.512,
+   "end": 76.626
+  },
+  {
+   "id": "s10",
+   "txt": "Faça backup quando quiser, restaure em segundos, ou exporte tudo para planilha em CSV.",
+   "start": 76.626,
+   "voice": 77.176,
+   "dur": 5.784,
+   "end": 84.76
+  },
+  {
+   "id": "s11",
+   "txt": "E vem mais por aí: contas e cartões, orçamentos, parcelas e lançamentos recorrentes.",
+   "start": 84.76,
+   "voice": 85.31,
+   "dur": 5.688,
+   "end": 91.998
+  },
+  {
+   "id": "s12",
+   "txt": "Nortis. O seu dinheiro, com direção.",
+   "start": 91.998,
+   "voice": 92.898,
+   "dur": 3.072,
+   "end": 99.17
+  }
+ ]
+}
