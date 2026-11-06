@@ -1,0 +1,5 @@
+build/
+audio/
+*.mp4
+shots/full.png
+shots/login.png
